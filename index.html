@@ -4192,3 +4192,25 @@ body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #shin-mascot-art .spark{st
  document.body.setAttribute('data-design-template','comic-light-night-dark');
 }if(document.readyState==='complete')setTimeout(init,0);else window.addEventListener('load',()=>setTimeout(init,0),{once:true});})();
 </script>
+
+<style id="shin-mascot-screen-corner-style">
+/* Keep Shin visible in the viewport, above its existing hide/show control. */
+body.lv3.shin-sidebar-compact #shin-mascot-footer{
+ position:fixed!important;right:12px!important;bottom:52px!important;left:auto!important;top:auto!important;
+ width:96px!important;height:88px!important;min-height:0!important;max-width:96px!important;
+ display:flex!important;align-items:flex-end!important;justify-content:flex-end!important;
+ margin:0!important;padding:0!important;border:0!important;background:transparent!important;
+ box-shadow:none!important;gap:0!important;z-index:40!important;pointer-events:none!important
+}
+body.lv3.shin-sidebar-compact #shin-mascot-footer p{display:none!important}
+body.lv3.shin-sidebar-compact #shin-mascot-art,
+body.lv3.shin-sidebar-compact #shin-mascot-art svg{width:96px!important;height:88px!important;flex:0 0 96px!important}
+body.lv3.shin-sidebar-compact #layout-v3-shin-toggle{right:12px!important;bottom:12px!important;z-index:41!important}
+body.lv3.shin-sidebar-compact.lv3-shin-hidden #shin-mascot-footer{display:none!important}
+@media(max-width:760px){
+ body.lv3.shin-sidebar-compact #shin-mascot-footer{width:72px!important;height:68px!important}
+ body.lv3.shin-sidebar-compact #shin-mascot-art,
+ body.lv3.shin-sidebar-compact #shin-mascot-art svg{width:72px!important;height:68px!important;flex-basis:72px!important}
+}
+@media print{body.lv3.shin-sidebar-compact #shin-mascot-footer{display:none!important}}
+</style>
