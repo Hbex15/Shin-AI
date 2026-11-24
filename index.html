@@ -4148,3 +4148,47 @@ body.lv3.shin-sidebar-compact[data-shin-theme="dark"] :is(button,input,select,te
 }if(document.readyState==='complete')setTimeout(init,0);else window.addEventListener('load',()=>setTimeout(init,0),{once:true});})();
 </script>
 <!-- Republish selected comic template: revision comic-2. -->
+
+<style id="shin-dual-mascot-style">
+/* Light: comic theme 3. Dark: quiet navy/gold theme 4. */
+body.lv3.shin-sidebar-compact #shinDock{display:none!important}
+body.lv3.shin-sidebar-compact #shin-mascot-footer{display:flex;align-items:flex-end;justify-content:flex-end;min-height:120px;margin-top:24px;padding:12px 0 0;border-top:1px solid var(--lv3-line);gap:12px;clear:both;isolation:isolate}
+body.lv3.shin-sidebar-compact #shin-mascot-footer p{font:12px/1.5 Arial,Tahoma,sans-serif;color:var(--lv3-muted);margin:0 0 12px;max-width:200px}
+body.lv3.shin-sidebar-compact #shin-mascot-art{width:112px;height:100px;flex:0 0 112px}
+body.lv3.shin-sidebar-compact #shin-mascot-art svg{display:block;width:112px;height:100px;overflow:visible}
+body.lv3.shin-sidebar-compact #shin-mascot-art .spark{stroke:#b67b00}
+body.lv3.shin-sidebar-compact.lv3-shin-hidden #shin-mascot-footer{display:none!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"]{
+ --comic-bg:#121d2a;--comic-paper:#1b2a3a;--comic-alt:#223447;--comic-line:#43596e;
+ --comic-ink:#edf0f3;--comic-muted:#bac8d5;--comic-blue:#263d52;--comic-yellow:#f5cb6a;
+ --lv3-primary:#f5cb6a;--lv3-hover:#ffe0a0;--lv3-line:#43596e
+}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] header.app-heading{background:#142435!important;border-bottom:1px solid #43596e!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] header.app-heading .app-heading-version{background:transparent!important;color:#d5e1ec!important;border-color:#7f92a5!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #shin-theme-toggle{background:#f5cb6a!important;border:1px solid #f5cb6a!important;box-shadow:none!important;border-radius:7px!important;color:#292116!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] .shin-sidebar-title h2{padding:0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;color:#f8d684!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] :is(.box,.sl-card,.pipeline-results,.sd-panel,.spf-panel,.lv3-empty,#agentMainInput){border:1px solid #43596e!important;border-radius:10px!important;box-shadow:none!important;background:#1b2a3a!important;color:#edf0f3!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #agentFeatureNav{background:#182737!important;border-right:1px solid #43596e!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #agentFeatureNav .agent-feature-tab{border:1px solid transparent!important;box-shadow:none!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #agentFeatureNav .agent-feature-tab:is(.is-active,[aria-current="page"]){background:#443922!important;color:#ffdb8a!important;border:1px solid #ad8d50!important;box-shadow:none!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #agentNavToggle,
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] :is(button.lv3-button,label.pick){border-width:1px!important;border-color:#7890a3!important;box-shadow:none!important;border-radius:7px!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] button.lv3-primary{background:#f5cb6a!important;color:#292116!important;border:1px solid #f5cb6a!important;box-shadow:none!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] :is(th,thead){background:#253c51!important;color:#eaf0f6!important;border-bottom:1px solid #526a81!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #shin-mascot-art .mascot-art{filter:drop-shadow(0 0 2px #ffcf65) drop-shadow(0 0 5px #d6953644)}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] #shin-mascot-art .spark{stroke:#ffdc73}
+@media(max-width:760px){body.lv3.shin-sidebar-compact #shin-mascot-footer p{max-width:150px}}
+@media print{body.lv3.shin-sidebar-compact #shin-mascot-footer{display:none!important}}
+</style>
+<script id="shin-dual-mascot-script">
+(function(){'use strict';function init(){
+ if(document.getElementById('shin-mascot-footer'))return;
+ const main=document.querySelector('main');if(!main)return;
+ const foot=document.createElement('aside');foot.id='shin-mascot-footer';foot.setAttribute('aria-label','Shin, bạn đồng hành phòng lab');
+ const note=document.createElement('p');note.textContent='Xem bằng chứng rõ ràng. Giữ kết luận có căn cứ.';
+ const art=document.createElement('div');art.id='shin-mascot-art';art.innerHTML="<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 160 140\" role=\"img\" aria-label=\"Shin trong áo lab, cầm bút và bình thí nghiệm\">\n<g class=\"mascot-art\" stroke=\"#25252c\" stroke-width=\"3.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n<path class=\"spark\" d=\"M121 21l7-13M133 31l15-5M108 17l2-12\" fill=\"none\"/>\n<path fill=\"#ffcf62\" d=\"M48 116h51l-5 16H80l-5-10-4 10H54z\"/>\n<path fill=\"#fff9ef\" d=\"M48 79q28-10 53 0l14 34-16 9-4-13-1 26H53l-1-25-9 11-14-10z\"/>\n<path fill=\"#ffbf87\" d=\"M44 42q1-27 32-27 34 0 35 28l-4 21q-9 20-31 20-25 0-34-20z\"/>\n<path fill=\"#33303a\" d=\"M43 50l-12-13 14-2-4-17 17 8 2-19 15 15L87 6l7 18 20-8-5 17 14 6-15 16-6-13-17 2-9-11-11 12-14-4z\"/>\n<path d=\"M57 52l12 1M84 53l13-1\" stroke-width=\"4\"/>\n<path fill=\"#25252c\" d=\"M62 59v4M90 59v4\"/>\n<path fill=\"#fff\" d=\"M63 70q14 7 29-1-8 17-22 10z\"/>\n<path d=\"M72 85l5 13-12 12-8-21M80 85l-3 13 13 12 7-21\" fill=\"#fff\"/>\n<path d=\"M76 98v33\" fill=\"none\"/>\n<path fill=\"#2d7fa2\" d=\"M58 108h10v9H58z\"/>\n<path d=\"M85 111h8\" fill=\"none\"/>\n<ellipse fill=\"#ef927d\" stroke=\"none\" cx=\"52\" cy=\"66\" rx=\"5\" ry=\"3\"/>\n<ellipse fill=\"#ef927d\" stroke=\"none\" cx=\"102\" cy=\"65\" rx=\"5\" ry=\"3\"/>\n<path fill=\"#f3b47e\" d=\"M33 107q-8-4-9 2-1 6 10 10l11-6-5-9z\"/>\n<path fill=\"#8ad0ef\" d=\"M26 105l-8-29 7-2 9 29z\"/>\n<path d=\"M18 76l1-9 6 7\" fill=\"#f4d9b0\"/>\n<path fill=\"#ffcc61\" d=\"M119 100v13l-10 17q-2 5 5 6h24q7-1 5-6l-10-17v-13z\"/>\n<path fill=\"#ffe782\" d=\"M114 123h24l5 8-4 5h-27l-3-5z\"/>\n<path d=\"M118 100h16\" fill=\"none\"/>\n<circle fill=\"#fff\" stroke=\"none\" cx=\"122\" cy=\"126\" r=\"2.5\"/>\n<circle fill=\"#fff\" stroke=\"none\" cx=\"131\" cy=\"130\" r=\"2\"/>\n</g></svg>";
+ foot.appendChild(note);foot.appendChild(art);main.appendChild(foot);
+ const toggle=document.getElementById('layout-v3-shin-toggle');if(toggle)toggle.setAttribute('aria-controls','shinDock shin-mascot-footer');
+ document.body.setAttribute('data-design-template','comic-light-night-dark');
+}if(document.readyState==='complete')setTimeout(init,0);else window.addEventListener('load',()=>setTimeout(init,0),{once:true});})();
+</script>
