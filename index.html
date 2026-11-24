@@ -913,24 +913,8 @@ function renderComparison(comparisons,selectedKey=''){
  }
 }
 
-(()=>{const shin=$('shinRunner'),butterfly=$('chaseButterfly'),bubble=$('shinBubble'),message=$('shinMessage');if(!shin)return;let x=0,dir=1,respawnTimer=null;function roam(){const max=Math.max(0,window.innerWidth-112),next=Math.random()*max;dir=next>=x?1:-1;x=next;shin.style.left=x+'px';shin.style.transform='scaleX('+dir+')';if(!butterfly.classList.contains('caught'))butterfly.style.left=Math.max(0,Math.min(window.innerWidth-32,x+(dir>0?78:28)))+'px';}shin.onclick=()=>{clearTimeout(respawnTimer);shin.classList.add('catching');butterfly.classList.remove('caught');butterfly.style.left=Math.max(0,Math.min(window.innerWidth-32,x+(dir>0?63:35)))+'px';void butterfly.offsetWidth;butterfly.classList.add('caught');bubble.hidden=false;message.textContent=filename?'Xin chào! Mình đã mở '+filename+'. Chọn batch hoặc bấm một LID để xem chi tiết.':'Xin chào! Mình sẵn sàng hỗ trợ bạn. Chọn workbook để phân tích hoặc mở phần so sánh update.';setTimeout(()=>shin.classList.remove('catching'),650);respawnTimer=setTimeout(()=>{butterfly.classList.remove('caught');butterfly.style.left=Math.max(0,Math.min(window.innerWidth-32,x+(dir>0?78:28)))+'px';},3000);};$('shinLoad').onclick=()=>{$('file').click();};$('shinCompare').onclick=()=>{document.querySelector('#agentFeatureNav [data-target=\"updates\"]')?.click();};document.addEventListener('click',e=>{if(!bubble.hidden&&!shin.contains(e.target)&&!bubble.contains(e.target))bubble.hidden=true;});document.addEventListener('keydown',e=>{if(e.key==='Escape')bubble.hidden=true;});window.addEventListener('resize',()=>{x=Math.min(x,Math.max(0,window.innerWidth-112));shin.style.left=x+'px';if(!butterfly.classList.contains('caught'))butterfly.style.left=Math.min(window.innerWidth-32,x+(dir>0?78:28))+'px';});// Walk continuously across the screen instead of shaking in place.
-let lastFrame=0,walkingDir=1;
-shin.style.transition='none';
-shin.style.left='0px';
-shin.style.transform='scaleX(1)';
-function fishWalk(ts){
-  if(!lastFrame)lastFrame=ts;
-  const dt=Math.min((ts-lastFrame)/1000,.06);lastFrame=ts;
-  const max=Math.max(0,window.innerWidth-110);
-  x+=walkingDir*95*dt;
-  if(x>=max){x=max;walkingDir=-1;}
-  else if(x<=0){x=0;walkingDir=1;}
-  dir=walkingDir;
-  shin.style.left=x+'px';
-  shin.style.transform='scaleX('+dir+')';
-  window.requestAnimationFrame(fishWalk);
-}
-window.requestAnimationFrame(fishWalk);})();;;
+(()=>{const shin=$('shinRunner'),butterfly=$('chaseButterfly'),bubble=$('shinBubble'),message=$('shinMessage');if(!shin)return;let x=0,dir=1,respawnTimer=null;function roam(){const max=Math.max(0,window.innerWidth-112),next=Math.random()*max;dir=next>=x?1:-1;x=next;shin.style.left=x+'px';shin.style.transform='scaleX('+dir+')';if(!butterfly.classList.contains('caught'))butterfly.style.left=Math.max(0,Math.min(window.innerWidth-32,x+(dir>0?78:28)))+'px';}shin.onclick=()=>{clearTimeout(respawnTimer);shin.classList.add('catching');butterfly.classList.remove('caught');butterfly.style.left=Math.max(0,Math.min(window.innerWidth-32,x+(dir>0?63:35)))+'px';void butterfly.offsetWidth;butterfly.classList.add('caught');bubble.hidden=false;message.textContent=filename?'Xin chào! Mình đã mở '+filename+'. Chọn batch hoặc bấm một LID để xem chi tiết.':'Xin chào! Mình sẵn sàng hỗ trợ bạn. Chọn workbook để phân tích hoặc mở phần so sánh update.';setTimeout(()=>shin.classList.remove('catching'),650);respawnTimer=setTimeout(()=>{butterfly.classList.remove('caught');butterfly.style.left=Math.max(0,Math.min(window.innerWidth-32,x+(dir>0?78:28)))+'px';},3000);};$('shinLoad').onclick=()=>{$('file').click();};$('shinCompare').onclick=()=>{document.querySelector('#agentFeatureNav [data-target=\"updates\"]')?.click();};document.addEventListener('click',e=>{if(!bubble.hidden&&!shin.contains(e.target)&&!bubble.contains(e.target))bubble.hidden=true;});document.addEventListener('keydown',e=>{if(e.key==='Escape')bubble.hidden=true;});window.addEventListener('resize',()=>{x=Math.min(x,Math.max(0,window.innerWidth-112));shin.style.left=x+'px';if(!butterfly.classList.contains('caught'))butterfly.style.left=Math.min(window.innerWidth-32,x+(dir>0?78:28))+'px';});// Keep Shin stationary; avoid a perpetual layout-writing animation loop.
+shin.style.transition='none';shin.style.left='0px';shin.style.transform='none';})();;;
 
 
 window.mtDNAReady=true;
@@ -1015,7 +999,7 @@ body[data-view="learn"] #workspaceLearn, body[data-view="review"] #workspaceRevi
   const resultItems=[...main.children].filter(el=>el.classList?.contains('stats')||(el.classList?.contains('bar')&&el.id!=='agentMainInput'));
   resultItems.forEach(el=>resultArea.append(el));
   if(byId('agentLidSection'))resultArea.append(byId('agentLidSection'));
-  window.pipelineMarkLoaded=function(count){const state=byId('pipelineResultState');if(state)state.textContent=count+' dòng đã phân tích'; resultArea.classList.toggle('has-data',count>0);if(count>0)requestAnimationFrame(()=>resultArea.scrollIntoView({behavior:'smooth',block:'start'}));};
+  window.pipelineMarkLoaded=function(count){const state=byId('pipelineResultState');if(state)state.textContent=count+' dòng đã phân tích'; resultArea.classList.toggle('has-data',count>0);/* Preserve scroll position after import. */};
   const tabs=[...nav.querySelectorAll('button[data-target]')];
   function show(view){
     if(view==='lids')view='pipeline';if(!['pipeline','updates','paste','ab1','spf','learn','review'].includes(view))return;
@@ -3963,3 +3947,16 @@ function init(){
 if(document.readyState==='complete')setTimeout(init,0);else window.addEventListener('load',()=>setTimeout(init,0),{once:true});
 })();
 </script>
+
+<style id="shin-calm-interactions-style">
+body.lv3.shin-sidebar-compact #agentFeatureNav,body.lv3.shin-sidebar-compact header.app-heading{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab,body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab:hover,body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab:active{transform:none!important;transition:none!important;animation:none!important;filter:none!important}
+body.lv3.shin-sidebar-compact main :is(button,label.pick,.pickButton),body.lv3.shin-sidebar-compact main :is(button,label.pick,.pickButton):hover,body.lv3.shin-sidebar-compact main :is(button,label.pick,.pickButton):active{transform:none!important;transition:none!important;animation:none!important}
+body.lv3.shin-sidebar-compact :is(#shinRunner,#chaseButterfly,#shinDock svg,#shinDock svg *){animation:none!important;transition:none!important}
+body.lv3.shin-sidebar-compact #shinRunner{left:0!important;transform:none!important}
+body.lv3.shin-sidebar-compact #chaseButterfly{display:none!important}
+body.lv3.shin-sidebar-compact :is(.box,.sl-card,.pipeline-results){box-shadow:none!important;border-radius:8px!important}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab .nav-card-heading{min-width:0!important}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab:focus-visible{outline:3px solid #174d6a!important;outline-offset:-3px!important}
+body.lv3.shin-sidebar-compact :is(.workspace-pane,.lv3-table-scroll,.tablewrap,.table-wrap,.spf-table-wrap){scroll-behavior:auto!important}
+</style>
