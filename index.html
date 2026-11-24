@@ -4029,3 +4029,121 @@ function init(){
 if(document.readyState==='complete')setTimeout(init,0);else window.addEventListener('load',()=>setTimeout(init,0),{once:true});
 })();
 </script>
+<style id="shin-comic-template-style">
+body.lv3.shin-sidebar-compact{
+ --comic-ink:#22232a;--comic-bg:#fff8e5;--comic-paper:#fffefa;--comic-alt:#f5f2e9;
+ --comic-line:#22232a;--comic-shadow:#22232a;--comic-yellow:#ffda57;--comic-red:#b82f36;
+ --comic-blue:#dbedf9;--comic-muted:#565964;
+ --lv3-bg:var(--comic-bg);--lv3-surface:var(--comic-paper);--lv3-soft:var(--comic-alt);
+ --lv3-ink:var(--comic-ink);--lv3-muted:var(--comic-muted);--lv3-primary:var(--comic-red);
+ --lv3-hover:#91252b;--lv3-control-line:#686771;--lv3-line:#d2cbbd;
+ --lv3-radius:6px;--lv3-radius-lg:10px;
+ background:var(--comic-bg)!important;color:var(--comic-ink)!important
+}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"]{
+ --comic-ink:#eeeae1;--comic-bg:#161d29;--comic-paper:#222d3d;--comic-alt:#2a384a;
+ --comic-line:#b7c1ce;--comic-shadow:#080d14;--comic-yellow:#f2ca61;--comic-red:#ffb5af;
+ --comic-blue:#2b465f;--comic-muted:#c0cad5;
+ --lv3-primary:#f2ca61;--lv3-hover:#ffe0a0;
+ --shin-dark-bg:var(--comic-bg);--shin-dark-surface:var(--comic-paper);--shin-dark-alt:var(--comic-alt);
+ --shin-dark-ink:var(--comic-ink);--shin-dark-muted:var(--comic-muted);--shin-dark-line:#65748a;
+ background:var(--comic-bg)!important;color:var(--comic-ink)!important
+}
+body.lv3.shin-sidebar-compact header.app-heading{
+ background:#b82f36!important;border-bottom:3px solid #22232a!important;box-shadow:none!important
+}
+body.lv3.shin-sidebar-compact header.app-heading .app-heading-kicker{
+ font-weight:900!important;font-size:16px!important;letter-spacing:.5px!important
+}
+body.lv3.shin-sidebar-compact header.app-heading .app-heading-version{
+ color:#fff!important;background:#92262d!important;border-color:#f7b7b7!important;border-radius:4px!important
+}
+body.lv3.shin-sidebar-compact #shin-theme-toggle{
+ background:#ffda57!important;color:#22232a!important;border:2px solid #22232a!important;
+ border-radius:6px!important;box-shadow:2px 2px 0 #22232a!important
+}
+body.lv3.shin-sidebar-compact #shin-theme-toggle:hover{background:#ffe78c!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] header.app-heading{
+ background:#302a38!important;border-bottom-color:var(--comic-line)!important
+}
+body.lv3.shin-sidebar-compact main{background:var(--comic-bg)!important;padding-bottom:72px!important}
+body.lv3.shin-sidebar-compact #agentFeatureNav{
+ background:var(--comic-paper)!important;border-right:2px solid var(--comic-line)!important
+}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-nav-caption,
+body.lv3.shin-sidebar-compact .shin-sidebar-group{color:var(--comic-muted)!important;font-weight:800!important;letter-spacing:.35px!important}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab{
+ color:var(--comic-ink)!important;background:transparent!important;
+ border:2px solid transparent!important;border-radius:7px!important;font-weight:700!important
+}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab:hover{
+ color:var(--comic-ink)!important;background:var(--comic-alt)!important;transform:none!important
+}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab:is(.is-active,[aria-current="page"]){
+ color:#22232a!important;background:var(--comic-yellow)!important;
+ border:2px solid var(--comic-line)!important;box-shadow:2px 2px 0 var(--comic-shadow)!important
+}
+body.lv3.shin-sidebar-compact #agentNavToggle{
+ background:var(--comic-paper)!important;color:var(--comic-ink)!important;border:2px solid var(--comic-line)!important
+}
+body.lv3.shin-sidebar-compact .shin-sidebar-title{
+ border:0!important;padding:0 0 8px!important;margin:0 0 16px!important;min-height:52px!important
+}
+body.lv3.shin-sidebar-compact .shin-sidebar-title h2{
+ position:relative!important;display:inline-block!important;margin:0 0 4px!important;
+ padding:9px 16px!important;background:var(--comic-paper)!important;color:var(--comic-ink)!important;
+ border:2px solid var(--comic-line)!important;border-radius:16px 16px 16px 4px!important;
+ box-shadow:3px 3px 0 var(--comic-shadow)!important;font-size:20px!important;line-height:1.35!important;font-weight:800!important
+}
+body.lv3.shin-sidebar-compact :is(.box,.sl-card,.pipeline-results,.sd-panel,.spf-panel,.lv3-empty){
+ background:var(--comic-paper)!important;color:var(--comic-ink)!important;
+ border:2px solid var(--comic-line)!important;border-radius:10px!important;
+ box-shadow:3px 3px 0 var(--comic-shadow)!important
+}
+body.lv3.shin-sidebar-compact :is(.box,.sl-card,.sd-panel,.spf-panel){margin-bottom:18px!important}
+body.lv3.shin-sidebar-compact #agentMainInput{
+ background:var(--comic-paper)!important;border:2px solid var(--comic-line)!important;border-radius:8px!important;
+ box-shadow:3px 3px 0 var(--comic-shadow)!important;padding:12px!important
+}
+body.lv3.shin-sidebar-compact :is(button.lv3-button,label.pick){
+ background:var(--comic-paper)!important;color:var(--comic-ink)!important;
+ border:2px solid var(--comic-line)!important;border-radius:6px!important;
+ box-shadow:none!important;font-weight:700!important;min-height:36px!important
+}
+body.lv3.shin-sidebar-compact button.lv3-button:hover:not(:disabled){background:var(--comic-alt)!important;transform:none!important}
+body.lv3.shin-sidebar-compact button.lv3-primary{
+ background:#b82f36!important;color:#fff!important;border:2px solid #22232a!important;
+ box-shadow:2px 2px 0 var(--comic-shadow)!important
+}
+body.lv3.shin-sidebar-compact button.lv3-primary:hover:not(:disabled){background:#91252b!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] button.lv3-primary{
+ background:var(--comic-yellow)!important;color:#22232a!important;border-color:var(--comic-line)!important
+}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] button.lv3-primary:hover:not(:disabled){background:#ffe0a0!important}
+body.lv3.shin-sidebar-compact button.lv3-danger{background:#fff0ef!important;color:#a32330!important;border-color:#a32330!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] button.lv3-danger{background:#442a36!important;color:#ffc0bf!important;border-color:#e3a1a7!important}
+body.lv3.shin-sidebar-compact button.lv3-button:disabled{background:var(--comic-alt)!important;color:var(--comic-muted)!important;box-shadow:none!important;border-color:var(--comic-muted)!important}
+body.lv3.shin-sidebar-compact :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea){
+ background:var(--comic-paper)!important;color:var(--comic-ink)!important;border-color:var(--comic-muted)!important;border-radius:5px!important
+}
+body.lv3.shin-sidebar-compact :is(#pipelineResults>.bar,.stats){background:var(--comic-alt)!important;color:var(--comic-ink)!important;border-color:var(--comic-line)!important}
+body.lv3.shin-sidebar-compact :is(th,thead){background:var(--comic-blue)!important;color:var(--comic-ink)!important;border-bottom:2px solid var(--comic-line)!important}
+body.lv3.shin-sidebar-compact td{border-color:var(--lv3-line)!important}
+body.lv3.shin-sidebar-compact tbody tr{background:var(--comic-paper)!important;color:var(--comic-ink)!important}
+body.lv3.shin-sidebar-compact tbody tr:nth-child(even){background:var(--comic-alt)!important}
+body.lv3.shin-sidebar-compact tbody tr:is(:hover,:focus-within,.selected,.active,.is-active){background:#fff0bc!important;color:#22232a!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] tbody tr:is(:hover,:focus-within,.selected,.active,.is-active){background:#48546a!important;color:#fff!important}
+body.lv3.shin-sidebar-compact .issue-card{box-shadow:none!important;border-radius:6px!important}
+body.lv3.shin-sidebar-compact #agentFeatureNav .agent-feature-tab:focus-visible,
+body.lv3.shin-sidebar-compact :is(button,input,select,textarea,summary):focus-visible{outline:3px solid #236bb0!important;outline-offset:3px!important}
+body.lv3.shin-sidebar-compact[data-shin-theme="dark"] :is(button,input,select,textarea,summary):focus-visible{outline-color:#ffda57!important}
+@media(prefers-reduced-motion:reduce){body.lv3.shin-sidebar-compact *{transition:none!important;animation:none!important}}
+</style>
+<script id="shin-comic-template-script">
+(function(){'use strict';function init(){
+ if(window.__shinComicTemplate)return;window.__shinComicTemplate=true;
+ document.body.setAttribute('data-design-template','comic');
+ const label=document.querySelector('header.app-heading .app-heading-kicker');
+ if(label)label.setAttribute('title','Shinosuke · Template 3 — Truyện tranh');
+}if(document.readyState==='complete')setTimeout(init,0);else window.addEventListener('load',()=>setTimeout(init,0),{once:true});})();
+</script>
