@@ -4430,3 +4430,91 @@ if(document.readyState==='complete')setTimeout(init,1500);else window.addEventLi
 #shinSPFFilterPanel #sbfPreview {font-weight:700}
 #shinSPFFilterPanel :is(textarea,select,button,input):focus-visible {outline:3px solid var(--lv3-accent,#945000);outline-offset:2px}
 </style>
+
+
+<script id="shin-rerun-ai-v1">
+(()=>{
+'use strict';
+const KEY='shin_rerun_reviewed_v1', $=id=>document.getElementById(id), norm=v=>String(v??'').normalize('NFC').trim().toLowerCase().replace(/\s+/g,' '), clean=v=>String(v??'').trim();
+const blank=()=>({history:[],primers:[],updated:'',historyName:'',primerName:''});
+let db=blank(), loadError='';
+try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&Array.isArray(d.history)&&Array.isArray(d.primers))db=d;}catch(e){loadError='Không đọc được kho đã lưu: '+e.message;}
+const tags=(d,t)=>Array.from(d.getElementsByTagNameNS('*',t));
+async function sheet(file,name){
+ if(typeof JSZip==='undefined')throw Error('Không tìm thấy thư viện ZIP có sẵn của Shin AI.');
+ const zip=await JSZip.loadAsync(await file.arrayBuffer());
+ const xml=async p=>{const f=zip.file(p);if(!f)throw Error('Thiếu '+p);const d=new DOMParser().parseFromString(await f.async('string'),'application/xml');if(tags(d,'parsererror').length)throw Error('XML không hợp lệ: '+p);return d;};
+ const text=n=>tags(n,'t').map(x=>x.textContent).join('');
+ const wb=await xml('xl/workbook.xml'), rels=await xml('xl/_rels/workbook.xml.rels');
+ const sh=tags(wb,'sheet').find(x=>x.getAttribute('name')===name);if(!sh)throw Error('Không có sheet '+name);
+ const rid=sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+ const rel=tags(rels,'Relationship').find(x=>x.getAttribute('Id')===rid);if(!rel)throw Error('Không tìm thấy đường dẫn sheet');
+ const path=decodeURI(new URL(rel.getAttribute('Target'),'https://shin.local/xl/workbook.xml').pathname.slice(1));
+ const ss=zip.file('xl/sharedStrings.xml')?tags(await xml('xl/sharedStrings.xml'),'si').map(text):[];
+ return tags(await xml(path),'row').map(row=>{
+  const values={};for(const c of tags(row,'c')){const col=(c.getAttribute('r')||'').replace(/\d/g,'');if(!col||col.length>2)continue;
+   const v=tags(c,'v')[0]?.textContent??'',t=c.getAttribute('t');values[col]=clean(t==='s'?ss[Number(v)]??'':t==='inlineStr'?text(c):v);}
+  return {n:Number(row.getAttribute('r')),v:values};
+ });
+}
+function parseHistory(rows){
+ const h=rows.find(r=>r.n===1)?.v||{};
+ for(const [a,b] of [['D','E'],['M','N'],['T','U']])if(norm(h[a])!=='issues'||!['requirement','requirements'].includes(norm(h[b])))throw Error('Cột '+a+'/'+b+' không đúng cấu trúc Issues/Requirement.');
+ let skipped=0;const unique=new Map();
+ for(const row of rows){if(row.n<=1)continue;const v=row.v,lid=[v.A,v.B].find(x=>/^LN_/i.test(x||''))||'';if(!lid)continue;
+  for(const [run,a,b,bc] of [[2,'D','E','C'],[3,'M','N','F'],[4,'T','U','O']]){
+   const issue=clean(v[a]),requirement=clean(v[b]);if(!issue||!requirement){if(issue||requirement)skipped++;continue;}
+   const r={lid,batch:clean(v[bc]),run,issue,requirement,row:row.n};unique.set(JSON.stringify([lid,r.batch,run,norm(issue),norm(requirement)]),r);
+  }
+ }
+ if(!unique.size)throw Error('Không có quyết định hợp lệ. Giữ kho cũ.');return {history:[...unique.values()],skipped};
+}
+function parsePrimers(rows){
+ const h=rows.find(r=>r.n===1)?.v||{};
+ if(norm(h.B)!=='mã mồi trên hệ thống'||norm(h.D)!=='vị trí bắt đầu của mồi'||norm(h.G)!=='chiều'||norm(h.I)!=='trạng thái')throw Error('Sai cấu trúc danh sách mồi.');
+ const primers=rows.filter(r=>r.n>1&&clean(r.v.B)).map(({v})=>({name:v.B,position:v.D||'',region:v.E||'',direction:v.G||'',note:v.H||'',status:v.I||''}));
+ if(!primers.length)throw Error('Danh sách mồi trống.');return primers;
+}
+const sites=s=>Array.from(String(s).matchAll(/(?:^|[^\dA-Za-z])(\d{1,5})\s*([RYSWKMBDHVN])\s*\??(?![A-Za-z0-9])/gi),m=>[Number(m[1]),m[2].toUpperCase()]).filter(([p])=>p>=1&&p<=16569);
+const region=p=>p>=16024&&p<=16365?'HV1':p>=73&&p<=340?'HV2':p>=438&&p<=576?'HV3':'Ngoài vùng';
+function recommend(query,data){
+ const q=norm(query), qs=sites(query), pos=[...new Set(qs.map(x=>x[0]))], h=data.history;
+ if(!q)return {mode:'Nhập Issues/PHP.',matches:[],ranked:[],candidates:[],pos};
+ const exact=h.filter(r=>norm(r.issue)===q);
+ const same=h.filter(r=>qs.length&&qs.every(([p,b])=>sites(r.issue).some(([x,y])=>x===p&&y===b)));
+ const samePos=h.filter(r=>pos.length&&pos.every(p=>sites(r.issue).some(([x])=>x===p)));
+ const matches=exact.length?exact:same.length?same:samePos;
+ const mode=exact.length?'Issues trùng':same.length?'PHP trùng; có thể kèm Issues khác':samePos.length?'Cùng vị trí PHP, khác mã IUPAC':'Không có ca tương ứng; reviewer cần lựa chọn.';
+ const count=new Map();for(const r of matches){const k=norm(r.requirement);if(!count.has(k))count.set(k,{requirement:r.requirement,n:0});count.get(k).n++;}
+ const ranked=[...count.values()].sort((a,b)=>b.n-a.n).map(r=>({...r,pct:(100*r.n/matches.length).toFixed(1)}));
+ const candidates=[];for(const p of pos)for(const m of data.primers){
+  if(norm(m.status)!=='on')continue;const match=clean(m.position).match(/^(\d+)\s*[FR]$/i),dir=norm(m.direction);
+  if(!match||!['forward','reverse'].includes(dir))continue;const a=Number(match[1]),distance=((dir==='forward'?p-a:a-p)+16569)%16569;
+  if(distance>0&&distance<=700)candidates.push({p,name:m.name,direction:m.direction,anchor:a,distance,note:m.note});
+ }
+ candidates.sort((a,b)=>a.p-b.p||a.distance-b.distance);
+ return {mode,matches,ranked,candidates,pos};
+}
+function table(host,heads,rows){host.replaceChildren();if(!rows.length){host.textContent='Không có dữ liệu.';return;}const t=document.createElement('table'),th=t.createTHead().insertRow();for(const x of heads){const c=document.createElement('th');c.textContent=x;th.append(c);}const body=t.createTBody();for(const row of rows){const tr=body.insertRow();for(const v of row)tr.insertCell().textContent=String(v??'');}host.append(t);}
+function mount(){
+ const host=$('workspaceLearn');if(!host||$('shinRerunAI'))return;
+ const card=document.createElement('section');card.id='shinRerunAI';card.className='sl-card';
+ card.innerHTML='<h2>Rerun AI · Lựa chọn mồi chạy lại</h2><p>Học từ các quyết định đã review trong RERUN_LIMS2 và danh sách mồi. Dữ liệu chỉ lưu trong trình duyệt này.</p><div class="sl-grid"><label>RERUN_LIMS2 (.xlsx)<input id="srHistory" type="file" accept=".xlsx,.xlsm"></label><label>Danh sách mồi (.xlsx)<input id="srPrimers" type="file" accept=".xlsx,.xlsm"></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" id="srImport">Cập nhật dữ liệu học</button><button type="button" id="srBackup">Sao lưu Rerun AI</button><label>Khôi phục <input id="srRestore" type="file" accept=".json"></label></div><p id="srStatus" role="status"></p><hr><label>Issues / PHP cần xác minh<textarea id="srQuery" rows="2" placeholder="152Y? hoặc 3R polyC"></textarea></label><div style="display:flex;gap:8px;margin:10px 0"><button type="button" id="srPredict">Đề xuất mồi</button><button type="button" id="srCopy">Sao chép phương án đầu</button></div><p id="srResult" role="status"></p><h3>Requirement đã review</h3><div id="srRank" class="sd-scroll"></div><h3>Mồi ON có thể đọc về phía PHP</h3><small>Khoảng cách danh định ≤700 nt chỉ là sàng lọc thử nghiệm, không xác nhận độ phủ hay chất lượng; không tự chọn PCR nếu thiếu lịch sử.</small><div id="srCandidates" class="sd-scroll"></div><h3>Ca lịch sử tương ứng (tối đa 100)</h3><div id="srCases" class="sd-scroll"></div>';
+ host.prepend(card);
+ const status=(note='')=>{$('srStatus').textContent=note+' '+db.history.length+' quyết định · '+db.primers.length+' mồi · '+(db.updated||'Chưa cập nhật')+' · '+[db.historyName,db.primerName].filter(Boolean).join(' / ');};
+ const persist=next=>{localStorage.setItem(KEY,JSON.stringify(next));db=next;};
+ let top='';
+ const run=()=>{const r=recommend($('srQuery').value,db);top=r.ranked[0]?.requirement||'';$('srResult').textContent=r.mode+' · '+r.matches.length+' ca. '+r.pos.map(p=>p+' ('+region(p)+')').join(', ')+' · Tỷ lệ lịch sử không phải độ chính xác. Reviewer cần kiểm tra trace và trạng thái mồi.';
+ table($('srRank'),['Requirement','Số ca','Tỷ lệ %'],r.ranked.map(x=>[x.requirement,x.n,x.pct]));
+ table($('srCandidates'),['PHP','Mồi','Chiều','Tọa độ','Khoảng cách nt','Ghi chú'],r.candidates.map(x=>[x.p,x.name,x.direction,x.anchor,x.distance,x.note]));
+ table($('srCases'),['LID','Batch','Run','Issues','Requirement','Dòng Excel'],r.matches.slice(0,100).map(x=>[x.lid,x.batch,x.run,x.issue,x.requirement,x.row]));};
+ $('srImport').onclick=async()=>{const b=$('srImport');b.disabled=true;try{const h=$('srHistory').files[0],p=$('srPrimers').files[0];if(!h&&!p)throw Error('Chọn ít nhất một file.');const next={...db};let skipped=0;if(h){const r=parseHistory(await sheet(h,'RERUN_LIMS2'));next.history=r.history;next.historyName=h.name;skipped=r.skipped;}if(p){next.primers=parsePrimers(await sheet(p,'Sheet1'));next.primerName=p.name;}next.updated=new Date().toLocaleString('vi-VN');persist(next);status('Đã cập nhật snapshot; bỏ '+skipped+' cặp thiếu dữ liệu.');run();}catch(e){status('Không cập nhật: '+e.message);}finally{b.disabled=false;}};
+ $('srPredict').onclick=run;
+ $('srCopy').onclick=async()=>{try{if(!top)throw Error('Chưa có phương án lịch sử.');await navigator.clipboard.writeText(top);status('Đã sao chép.');}catch(e){status(e.message);}};
+ $('srBackup').onclick=()=>{const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify({format:KEY,data:db})],{type:'application/json'}));a.href=url;a.download='Shin_Rerun_AI_Backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+ $('srRestore').onchange=async()=>{try{const f=$('srRestore').files[0];if(!f)return;const x=JSON.parse(await f.text());if(x.format!==KEY||!Array.isArray(x.data?.history)||!Array.isArray(x.data?.primers)||!x.data.history.every(r=>typeof r.issue==='string'&&typeof r.requirement==='string')||!x.data.primers.every(r=>typeof r.name==='string'))throw Error('Bản sao lưu không hợp lệ.');persist({...blank(),...x.data});status('Đã khôi phục.');run();}catch(e){status(e.message);}};
+ status(loadError);run();
+}
+mount();if(!$('shinRerunAI'))document.addEventListener('DOMContentLoaded',mount,{once:true});
+})();
+</script>
