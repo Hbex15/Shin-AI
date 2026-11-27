@@ -2185,48 +2185,133 @@ if(typeof module!=='undefined'&&module.exports)module.exports=G.ShinSPFBatch;
 const host=document.getElementById('workspaceSPF');if(!host)return;
 const box=document.createElement('section');box.id='shinSPFBatchFilter';
 box.style.cssText='margin:20px 0;padding:22px;border:1px solid #b5cbd1;border-radius:18px;background:#f6faf9;color:#233e4a';
-box.innerHTML=`<h2 style="margin-top:0">Lọc nhiều SPF · giữ contig có đuôi -1</h2>
-<p>Chọn nhiều file cùng lúc. Mỗi SPF được xử lý riêng; xem danh sách giữ/xóa trước khi tải.</p>
-<p><b>Xuất SPF giữ nguyên tên gốc.</b> ZIP chỉ chứa các file SPF, không kèm TXT hay danh sách phụ.</p>
-<label>Chọn các file SPF <input id="sbfFiles" type="file" accept=".spf,.SPF" multiple></label>
-<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0"><label>Xem file <select id="sbfPick" disabled></select></label><button id="sbfZip" type="button" disabled>Tải ZIP các SPF đã lọc</button></div>
-<div id="sbfStatus" role="status" aria-live="polite">Chưa chọn file.</div>
-<p style="font-size:14px">Chỉ lọc <b>contig</b> theo tên kết thúc chính xác bằng <b>-1</b>. Xóa thêm đối chứng âm có ký hiệu <b>NTC1</b> hoặc <b>NTC2</b>. Các read/reference khác được giữ nguyên. Không ghi đè file gốc.</p>
-<div id="sbfSummary" style="overflow:auto"></div><div id="sbfDetails"></div>`;
+box.innerHTML=[
+ '<h2 style="margin-top:0">Lọc nhiều SPF · giữ contig theo đuôi -1 hoặc danh sách LID</h2>',
+ '<p>Chọn nhiều file cùng lúc. Mỗi SPF được xử lý riêng; xem danh sách giữ/xóa trước khi tải.</p>',
+ '<p><b>Xuất SPF giữ nguyên tên gốc.</b> ZIP chỉ chứa các file SPF, không kèm TXT hay danh sách phụ.</p>',
+ '<div class="sbf-keep-toolbar"><label>Cách giữ contig <select id="sbfKeepMode"><option value="suffix">Giữ contig có đuôi -1</option><option value="list">Giữ theo danh sách LID</option></select></label></div>',
+ '<div id="sbfKeepFields" hidden><label for="sbfKeepLids">Danh sách LID được giữ lại</label>',
+ '<textarea id="sbfKeepLids" rows="5" spellcheck="false" placeholder="LN_26_AF4754&#10;LN_26_AF5857&#10;LN_26_AF5860" aria-describedby="sbfKeepHelp"></textarea>',
+ '<p id="sbfKeepHelp">Mỗi LID một dòng, hoặc ngăn bằng khoảng trắng, dấu phẩy, chấm phẩy. Có thể nhập có hoặc không có LN_. So khớp toàn bộ mã LID, không tìm theo một phần tên.</p>',
+ '<label class="sbf-keep-check"><input id="sbfKeepOnlySuffix" type="checkbox" checked> Chỉ giữ contig có đuôi -1 trong các LID đã nhập</label>',
+ '<p>Bỏ chọn ô trên để giữ tất cả contig thuộc các LID đã nhập, kể cả contig không có đuôi -1. Tên contig trong SPF được giữ nguyên.</p></div>',
+ '<div class="sbf-keep-toolbar"><label>Chọn các file SPF <input id="sbfFiles" type="file" accept=".spf,.SPF" multiple></label><button id="sbfPreview" type="button" disabled>Kiểm tra danh sách giữ/xóa</button></div>',
+ '<div class="sbf-keep-toolbar"><label>Xem file <select id="sbfPick" disabled></select></label><button id="sbfZip" type="button" disabled>Tải ZIP các SPF đã lọc</button></div>',
+ '<div id="sbfStatus" role="status" aria-live="polite">Chưa chọn file.</div>',
+ '<div id="sbfKeepReport" role="status" aria-live="polite"></div>',
+ '<p style="font-size:14px">Chỉ lọc contig theo lựa chọn trên. Xóa thêm đối chứng âm có ký hiệu <b>NTC1</b> hoặc <b>NTC2</b>. Các read/reference khác được giữ nguyên. Không ghi đè file gốc. File không còn contig phù hợp sẽ được bỏ qua, không xuất SPF rỗng.</p>',
+ '<div id="sbfSummary" style="overflow:auto"></div><div id="sbfDetails"></div>'
+].join('');
 host.prepend(box);
-const el=id=>document.getElementById(id),input=el('sbfFiles'),pick=el('sbfPick'),zipBtn=el('sbfZip'),status=el('sbfStatus');let items=[],busy=false;
+const el=id=>document.getElementById(id),input=el('sbfFiles'),pick=el('sbfPick'),zipBtn=el('sbfZip'),status=el('sbfStatus'),mode=el('sbfKeepMode'),lidInput=el('sbfKeepLids'),onlySuffix=el('sbfKeepOnlySuffix'),preview=el('sbfPreview'),keepReport=el('sbfKeepReport');
+let items=[],busy=false;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function render(){
- const body=items.map((r,i)=>`<tr><td style="padding:8px">${esc(r.name)}</td><td>${r.kept?.length??'—'}</td><td>${r.removed?.length??'—'}</td><td>${r.removedNTC?.length??'—'}</td><td>${esc(r.error||r.note||'Đã kiểm tra cấu trúc sau lọc')}</td></tr>`).join('');
- el('sbfSummary').innerHTML=`<table style="width:100%;text-align:left;border-collapse:collapse"><thead><tr><th>File SPF</th><th>Giữ</th><th>Xóa contig</th><th>Xóa NTC</th><th>Trạng thái</th></tr></thead><tbody>${body}</tbody></table>`;
- const r=items[Number(pick.value)];if(!r){el('sbfDetails').textContent='';return}
- if(r.error){el('sbfDetails').textContent=r.error;return}
- el('sbfDetails').innerHTML=`<h3>${esc(r.name)}</h3><p>${r.standalone} read/reference đứng riêng còn lại · đã xóa ${r.removedNTC.length} read/reference đối chứng âm.</p><details open><summary>Giữ ${r.kept.length} contig</summary><div style="padding:10px;line-height:1.8">${r.kept.map(esc).join('<br>')}</div></details><details><summary>Xóa ${r.removed.length} contig</summary><div style="padding:10px;max-height:260px;overflow:auto;line-height:1.8">${r.removed.map(esc).join('<br>')||'Không có'}</div></details><details><summary>Xóa ${r.removedNTC.length} đối chứng âm NTC1/NTC2</summary><div style="padding:10px;line-height:1.8">${r.removedNTC.map(esc).join('<br>')||'Không có'}</div></details>`;
+function canonicalLid(name){
+ const m=String(name).trim().toUpperCase().match(/^(?:LN_)?(\d{2}_[A-Z]+\d+)(?:\s*-\s*\d+)?$/);
+ return m?m[1]:null;
 }
-input.addEventListener('change',async()=>{
- if(busy)return;busy=true;input.disabled=true;pick.disabled=true;zipBtn.disabled=true;items=[];pick.replaceChildren();render();
+function parseKeepList(text){
+ const tokens=String(text).trim().split(/[\s,;]+/).filter(Boolean),wanted=new Map(),invalid=[];
+ let duplicates=0;
+ for(const token of tokens){
+  const key=canonicalLid(token);
+  if(!key){invalid.push(token);continue;}
+  if(wanted.has(key))duplicates++;else wanted.set(key,token);
+ }
+ if(invalid.length)throw Error('LID không hợp lệ: '+invalid.slice(0,10).join(', ')+(invalid.length>10?'…':'')+'. Dùng mã đầy đủ, ví dụ LN_26_AF4754.');
+ if(!wanted.size)throw Error('Nhập ít nhất một LID cần giữ trước khi kiểm tra.');
+ return {wanted,duplicates};
+}
+function selectContigs(contigs,settings){
+ const found=new Set(),matched=new Set(),keep=[];
+ for(const c of contigs){
+  const key=canonicalLid(c.name);
+  if(settings.mode==='list'&&key&&settings.wanted.has(key))found.add(key);
+  const eligible=settings.mode==='suffix'
+   ?c.name.endsWith('-1')
+   :key&&settings.wanted.has(key)&&(!settings.onlySuffix||c.name.endsWith('-1'));
+  if(eligible){keep.push(c);if(key)matched.add(key);}
+ }
+ const keepIds=new Set(keep.map(c=>c.id));
+ return {keep,remove:contigs.filter(c=>!keepIds.has(c.id)).map(c=>c.name),found,matched};
+}
+function controls(){
+ for(const field of [input,mode,lidInput,onlySuffix])field.disabled=busy;
+ preview.disabled=busy||!input.files||!input.files.length;
+ pick.disabled=busy||!items.length;
+ zipBtn.disabled=busy||!items.some(r=>!r.error);
+}
+function render(){
+ const body=items.map(r=>'<tr><td style="padding:8px">'+esc(r.name)+'</td><td>'+(r.kept?.length??'—')+'</td><td>'+(r.removed?.length??'—')+'</td><td>'+(r.removedNTC?.length??'—')+'</td><td>'+esc(r.error||r.note||'Đã kiểm tra cấu trúc sau lọc')+'</td></tr>').join('');
+ el('sbfSummary').innerHTML='<table style="width:100%;text-align:left;border-collapse:collapse"><thead><tr><th>File SPF</th><th>Giữ</th><th>Xóa contig</th><th>Xóa NTC</th><th>Trạng thái</th></tr></thead><tbody>'+body+'</tbody></table>';
+ const r=items[Number(pick.value)];
+ if(!r){el('sbfDetails').textContent='';return;}
+ if(r.error){el('sbfDetails').textContent=r.error;return;}
+ el('sbfDetails').innerHTML='<h3>'+esc(r.name)+'</h3><p>'+r.standalone+' read/reference đứng riêng còn lại · đã xóa '+r.removedNTC.length+' read/reference đối chứng âm.</p><details open><summary>Giữ '+r.kept.length+' contig</summary><div style="padding:10px;line-height:1.8">'+r.kept.map(esc).join('<br>')+'</div></details><details><summary>Xóa '+r.removed.length+' contig</summary><div style="padding:10px;max-height:260px;overflow:auto;line-height:1.8">'+(r.removed.map(esc).join('<br>')||'Không có')+'</div></details><details><summary>Xóa '+r.removedNTC.length+' đối chứng âm NTC1/NTC2</summary><div style="padding:10px;line-height:1.8">'+(r.removedNTC.map(esc).join('<br>')||'Không có')+'</div></details>';
+}
+function invalidate(){
+ if(busy)return;
+ items=[];pick.replaceChildren();keepReport.replaceChildren();render();controls();
+ if(input.files&&input.files.length)status.textContent='Lựa chọn đã thay đổi. Bấm Kiểm tra danh sách giữ/xóa trước khi tải.';
+}
+function setMode(){
+ el('sbfKeepFields').hidden=mode.value!=='list';invalidate();
+}
+async function processFiles(){
+ if(busy)return;
+ items=[];pick.replaceChildren();keepReport.replaceChildren();render();
+ let settings;
+ try{
+  settings={mode:mode.value,onlySuffix:onlySuffix.checked,wanted:new Map(),duplicates:0};
+  if(settings.mode==='list')Object.assign(settings,parseKeepList(lidInput.value));
+  if(!input.files||!input.files.length)throw Error('Chọn ít nhất một file SPF.');
+ }catch(e){status.textContent=e.message;controls();return;}
+ busy=true;controls();
+ const found=new Set(),matched=new Set();
  try{
   const files=Array.from(input.files||[]);
   for(let i=0;i<files.length;i++){
-   const f=files[i];status.textContent=`Đang kiểm tra ${i+1}/${files.length}: ${f.name}`;await new Promise(r=>setTimeout(r,0));
-   let result;
+   const f=files[i];status.textContent='Đang kiểm tra '+(i+1)+'/'+files.length+': '+f.name;
+   await new Promise(r=>setTimeout(r,0));
    try{
     if(!/\.spf$/i.test(f.name))throw Error('Chỉ nhận file SPF');
-    const bytes=new Uint8Array(await f.arrayBuffer()),p=ShinSPFBatch.parse(bytes),remove=p.contigs.filter(c=>!c.name.endsWith('-1')).map(c=>c.name);
-    if(!p.contigs.some(c=>c.name.endsWith('-1')))throw Error('Không có contig đuôi -1: bỏ qua file, không xóa toàn bộ');
-    result=ShinSPFBatch.filter(bytes,remove,{removeNTC:true});
+    const bytes=new Uint8Array(await f.arrayBuffer()),p=ShinSPFBatch.parse(bytes),plan=selectContigs(p.contigs,settings);
+    plan.found.forEach(k=>found.add(k));
+    if(!plan.keep.length)throw Error(settings.mode==='suffix'?'Không có contig đuôi -1: bỏ qua file, không xóa toàn bộ':'Không có contig phù hợp danh sách và lựa chọn đuôi -1: bỏ qua file.');
+    const result=ShinSPFBatch.filter(bytes,plan.remove,{removeNTC:true});
+    if(!result.kept.length)throw Error('Không còn contig sau lọc; bỏ qua file, không xuất SPF rỗng.');
+    plan.matched.forEach(k=>matched.add(k));
     if(!result.removed.length&&!result.removedNTC.length)result.note='Không có đối tượng cần xóa; giữ nguyên file';
     items.push({...result,name:f.name});
-   }catch(e){items.push({name:f.name,error:e.message})}
+   }catch(e){items.push({name:f.name,error:e.message});}
    const op=document.createElement('option');op.value=String(i);op.textContent=f.name;pick.append(op);
   }
-  pick.value='0';const ok=items.filter(r=>!r.error);pick.disabled=!items.length;zipBtn.disabled=!ok.length;render();
-  status.textContent=`Đã đọc ${items.length} file · ${ok.length} file có thể xuất · ${items.length-ok.length} file bỏ qua.`;
- }finally{busy=false;input.disabled=false}
-});
+  pick.value='0';render();
+  const ok=items.filter(r=>!r.error);
+  status.textContent='Đã đọc '+items.length+' file · '+ok.length+' file có thể xuất · '+(items.length-ok.length)+' file bỏ qua.';
+  if(settings.mode==='list'){
+   const missing=[...settings.wanted].filter(([k])=>!found.has(k)).map(([,v])=>v);
+   const blocked=[...settings.wanted].filter(([k])=>found.has(k)&&!matched.has(k)).map(([,v])=>v);
+   const line=document.createElement('p');line.textContent='Danh sách có '+settings.wanted.size+' LID duy nhất · '+matched.size+' LID có contig được giữ · '+settings.duplicates+' mục trùng được gộp.';
+   keepReport.append(line);
+   for(const [title,names]of [['Không tìm thấy trong các SPF đã đọc',missing],['Có LID nhưng chưa có contig được giữ theo lựa chọn hiện tại',blocked]]){
+    const p=document.createElement('p');p.textContent=title+': '+(names.length?names.join(', '):'không');keepReport.append(p);
+   }
+   if(items.some(r=>r.error)){
+    const p=document.createElement('p');p.textContent='Có file bị bỏ qua/lỗi. Danh sách không tìm thấy chỉ phản ánh các SPF đọc được; xem trạng thái từng file.';keepReport.append(p);
+   }
+  }
+ }finally{busy=false;controls();}
+}
+input.addEventListener('change',processFiles);
+preview.addEventListener('click',processFiles);
+mode.addEventListener('change',setMode);
+lidInput.addEventListener('input',invalidate);
+onlySuffix.addEventListener('change',invalidate);
 pick.addEventListener('change',render);
 zipBtn.addEventListener('click',async()=>{
- if(busy)return;busy=true;zipBtn.disabled=true;input.disabled=true;status.textContent='Đang đóng gói các bản SPF riêng biệt…';
+ if(busy||!items.some(r=>!r.error))return;
+ busy=true;controls();status.textContent='Đang đóng gói các bản SPF riêng biệt…';
  try{
   if(typeof JSZip==='undefined')throw Error('Thiếu thành phần tạo ZIP');
   const zip=new JSZip(),used=new Set();
@@ -2236,11 +2321,14 @@ zipBtn.addEventListener('click',async()=>{
    while(used.has(path.toLowerCase()))path='Tep_'+(j++)+'/'+r.name;
    used.add(path.toLowerCase());zip.file(path,r.bytes);
   }
-  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:3}}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Shin_SPF_Da_Loc.zip';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);status.textContent='Đã tạo ZIP chỉ gồm SPF, giữ nguyên tên gốc.';
- }catch(e){status.textContent='Không xuất được ZIP: '+e.message}finally{busy=false;zipBtn.disabled=!items.some(r=>!r.error);input.disabled=false}
+  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:3}}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='Shin_SPF_Da_Loc.zip';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);status.textContent='Đã tạo ZIP chỉ gồm SPF, giữ nguyên tên gốc.';
+ }catch(e){status.textContent='Không xuất được ZIP: '+e.message;}
+ finally{busy=false;controls();}
 });
+controls();
 })();
-
 </script>
 <style>body[data-view="txtzip"] #workspaceTXT{display:block}#txtZipList{max-height:460px;overflow:auto;border:1px solid #dde6eb;border-radius:10px;padding:12px}#txtZipList label{display:flex;gap:10px;align-items:center;padding:8px;border-bottom:1px solid #edf0f2}#txtZipList input{width:auto}#txtZipIds{width:100%;min-height:90px}#workspaceTXT .bar{flex-wrap:wrap}</style>
 <script>
@@ -4310,7 +4398,7 @@ if(document.readyState==='complete')setTimeout(init,1500);else window.addEventLi
     wrapper=document.createElement('details');wrapper.id='shinSPFFilterPanel';
     wrapper.open=true;
     const heading=document.createElement('summary');
-    heading.textContent='Lọc SPF · giữ contig có đuôi -1';
+    heading.textContent='Lọc SPF · giữ theo đuôi -1 hoặc danh sách LID';
     wrapper.appendChild(heading);
    }
    if(panel.parentNode!==wrapper)wrapper.appendChild(panel);
@@ -4328,3 +4416,17 @@ if(document.readyState==='complete')setTimeout(init,1500);else window.addEventLi
  else window.addEventListener('load',()=>setTimeout(init,0),{once:true});
 })();
 </script>
+
+<style id="shin-spf-keep-list-style">
+#shinSPFFilterPanel .sbf-keep-toolbar {display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0}
+#shinSPFFilterPanel #sbfKeepFields[hidden] {display:none!important}
+#shinSPFFilterPanel #sbfKeepFields {padding:14px;margin:12px 0;border:1px solid var(--lv3-line,#c7d6e2);border-radius:8px;background:var(--lv3-soft,#edf3f7)}
+#shinSPFFilterPanel #sbfKeepFields > label[for] {display:block;margin-bottom:8px;font-weight:700}
+#shinSPFFilterPanel #sbfKeepLids {display:block;width:100%;max-width:780px;box-sizing:border-box;min-height:120px;padding:10px;font:14px/1.5 Consolas,monospace;resize:vertical;border:1px solid var(--lv3-control-line,#7c8f9f);border-radius:6px;background:var(--lv3-surface,#fff);color:var(--lv3-ink,#203345)}
+#shinSPFFilterPanel #sbfKeepHelp {font-size:14px}
+#shinSPFFilterPanel .sbf-keep-check {display:flex;align-items:center;gap:8px}
+#shinSPFFilterPanel #sbfKeepOnlySuffix {width:auto;min-height:18px;flex:none}
+#shinSPFFilterPanel #sbfKeepReport {overflow-wrap:anywhere}
+#shinSPFFilterPanel #sbfPreview {font-weight:700}
+#shinSPFFilterPanel :is(textarea,select,button,input):focus-visible {outline:3px solid var(--lv3-accent,#945000);outline-offset:2px}
+</style>
