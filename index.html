@@ -4254,3 +4254,77 @@ function init(){
 if(document.readyState==='complete')setTimeout(init,1500);else window.addEventListener('load',()=>setTimeout(init,1500),{once:true});
 })();
 </script>
+<style id="shin-spf-filter-visible-style">
+#workspaceSPF.shin-spf-module-active > #shinSPFFilterPanel {
+ display:block!important;
+}
+#workspaceSPF > #shinSPFFilterPanel {
+ margin:0 0 20px!important;
+ border:2px solid var(--comic-line,var(--lv3-line,#c7d6e2));
+ border-radius:12px;
+ background:var(--lv3-surface,#fff);
+ color:var(--lv3-ink,#203345);
+ overflow:hidden;
+}
+#shinSPFFilterPanel > summary {
+ min-height:44px;padding:12px 16px;cursor:pointer;
+ font-size:16px;font-weight:700;line-height:1.4;
+ background:var(--lv3-soft,#edf3f7);color:var(--lv3-ink,#203345);
+}
+#shinSPFFilterPanel > summary:focus-visible {
+ outline:3px solid var(--lv3-accent,#945000);outline-offset:-4px;
+}
+#shinSPFFilterPanel > #shinSPFBatchFilter {
+ display:block!important;margin:0!important;padding:16px!important;
+ border:0!important;border-radius:0!important;
+ background:var(--lv3-surface,#fff)!important;
+ color:var(--lv3-ink,#203345)!important;
+}
+#shinSPFFilterPanel #shinSPFBatchFilter > h2 {display:none!important}
+#shinSPFFilterPanel #sbfSummary {
+ max-width:100%;max-height:320px;overflow:auto;
+}
+#shinSPFFilterPanel #sbfSummary table {min-width:580px}
+#shinSPFFilterPanel #sbfSummary th {
+ position:sticky;top:0;z-index:1;
+ background:var(--lv3-soft,#edf3f7);color:var(--lv3-ink,#203345);
+}
+#shinSPFFilterPanel :is(input,select,button) {min-height:32px}
+@media(max-width:1100px) {
+ #shinSPFFilterPanel > summary {padding:12px}
+ #shinSPFFilterPanel > #shinSPFBatchFilter {padding:12px!important}
+}
+</style>
+<script id="shin-spf-filter-visible-script">
+(function(){
+ 'use strict';
+ function init(){
+  if(window.__shinSPFFilterVisible){window.__shinSPFFilterVisible.refresh();return;}
+  const host=document.getElementById('workspaceSPF');
+  if(!host)return;
+  function refresh(){
+   const panel=document.getElementById('shinSPFBatchFilter');
+   if(!panel)return;
+   let wrapper=document.getElementById('shinSPFFilterPanel');
+   if(!wrapper){
+    wrapper=document.createElement('details');wrapper.id='shinSPFFilterPanel';
+    wrapper.open=true;
+    const heading=document.createElement('summary');
+    heading.textContent='Lọc SPF · giữ contig có đuôi -1';
+    wrapper.appendChild(heading);
+   }
+   if(panel.parentNode!==wrapper)wrapper.appendChild(panel);
+   const frame=document.getElementById('shinSPFExplorerFrame');
+   if(wrapper.parentNode!==host||(frame&&wrapper.nextElementSibling!==frame)){
+    host.insertBefore(wrapper,frame&&frame.parentNode===host?frame:host.firstChild);
+   }
+  }
+  window.__shinSPFFilterVisible={refresh};
+  refresh();
+  const observer=new MutationObserver(refresh);
+  observer.observe(host,{childList:true});
+ }
+ if(document.readyState==='complete')setTimeout(init,0);
+ else window.addEventListener('load',()=>setTimeout(init,0),{once:true});
+})();
+</script>
