@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const KEY='shin_rerun_reviewed_v1', VERSION='2026.11.27-r2';
+const KEY='shin_rerun_reviewed_v1', VERSION='2026.11.28-r3';
 const $=id=>document.getElementById(id);
 const clean=v=>String(v??'').trim();
 const norm=v=>clean(v).normalize('NFC').toLowerCase().replace(/\s+/g,' ');
@@ -76,7 +76,7 @@ function parseHistory(rows){
  for(const row of rows){if(row.n<=head.n)continue;const v=row.v;
   const lid=[v.A,v.B].map(clean).find(x=>/^LN[_-][A-Z0-9_-]+$/i.test(x))||'';
   if(!lid)continue;
-  for(const [run,ic,rc,bc] of [[2,'D','E','C'],[3,'M','N','F'],[4,'T','U','O']]){
+  for(const [run,ic,rc,bc] of [[2,'D','E','F'],[3,'M','N','O'],[4,'T','U','V']]){
    const issue=clean(v[ic]),requirement=clean(v[rc]);if(bad(issue)||bad(requirement)){if(!bad(issue)||!bad(requirement))skipped++;continue;}
    const r={lid,batch:clean(v[bc]),run,issue,requirement,row:row.n,source:'RERUN_LIMS2'};
    unique.set([norm(lid),run,norm(issue),norm(requirement)].join('|'),r);
@@ -111,7 +111,7 @@ function recommend(q,data){
  matches.sort((a,b)=>b.score-a.score||norm(a.lid).localeCompare(norm(b.lid)));
  const top=matches[0]?.score||0,selected=matches.filter(x=>x.score>=Math.max(22,top-14)).slice(0,2000);
  const groups=new Map();
- for(const r of selected){const key=norm(r.requirement);
+ for(const r of selected){const key=norm(r.requirement).replace(/\s*,\s*/g,', ');
   if(!groups.has(key))groups.set(key,{requirement:r.requirement,score:r.score,source:new Set(),lids:new Set(),cases:0});
   const a=groups.get(key);a.score=Math.max(a.score,r.score);a.source.add(r.source);a.lids.add(norm(r.lid));a.cases++;
  }
@@ -120,7 +120,7 @@ function recommend(q,data){
  const candidates=[],blocked=[];
  for(const t of sites)for(const p of data.primers){
   if(norm(p.status)!=='on')continue;
-  if(/(?:^|-)16258R\b/i.test(p.name)){blocked.push(p.name);continue;}
+  if(/(?:^|[-_])16258R\b|^R16258$/i.test(p.name)){blocked.push(p.name);continue;}
   const mm=p.position.match(/^(\d{1,5})\s*([FR])?$/i),direction=norm(p.direction);
   if(!mm)continue;const anchor=Number(mm[1]);let dir='';
   if(['forward','f','xuôi','xuoi'].includes(direction))dir='F';
@@ -150,11 +150,20 @@ function exportFeedback(){
  saveText('Shin_Rerun_Reviewer_Feedback.csv','\uFEFF'+[head,...rows].map(row=>row.map(esc).join(',')).join('\r\n'),'text/csv;charset=utf-8');
 }
 function mount(){
- const host=$('workspaceLearn');if(!host||$('shinRerunAI'))return;
+ const nav=$('agentFeatureNavInner'),learn=$('workspaceLearn'),main=learn?.parentElement;if(!nav||!main||$('shinRerunAI'))return;
+ const host=document.createElement('section');host.id='workspacePrimerRerun';host.className='workspace-pane';host.style.setProperty('--sl-line','#d9e5e3');host.style.setProperty('--sl-blue','#276d93');main.append(host);
+ const tab=document.createElement('button');tab.type='button';tab.className='agent-feature-tab nav-feature-card';tab.dataset.target='primer-rerun';tab.setAttribute('aria-label','Primer Rerun');tab.innerHTML='<span class="nav-card-heading"><svg class="nav-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 3c0 8 16 10 16 18M20 3C20 11 4 13 4 21M7 5h10M8 19h8M8 9h8M8 15h8"/></svg><span>Primer Rerun</span></span>';
+ const learnTab=nav.querySelector('[data-target="learn"]');if(learnTab)learnTab.before(tab);else nav.append(tab);
+ const navStyle=document.createElement('style');navStyle.textContent='body:not([data-view="primer-rerun"]) #workspacePrimerRerun{display:none!important}body[data-view="primer-rerun"] #workspacePrimerRerun{display:block!important}body[data-view="primer-rerun"] .workspace-pane:not(#workspacePrimerRerun){display:none!important}';document.head.append(navStyle);
+ const sync=()=>{const active=document.body.dataset.view==='primer-rerun';tab.classList.toggle('is-active',active);tab.setAttribute('aria-selected',String(active));if(active){tab.setAttribute('aria-current','page');const title=$('shin-sidebar-title')?.querySelector('h2');if(title)title.textContent='Primer Rerun';}else tab.removeAttribute('aria-current');};
+ tab.addEventListener('click',()=>{document.body.dataset.view='primer-rerun';nav.querySelectorAll('[data-target]').forEach(t=>{if(t!==tab){t.classList.remove('is-active');t.setAttribute('aria-selected','false');t.removeAttribute('aria-current');}});try{history.replaceState(null,'','#primer-rerun');}catch(_){}sync();window.scrollTo({top:0,behavior:'auto'});});
+ nav.addEventListener('click',e=>{const t=e.target.closest('[data-target]');if(t&&t!==tab&&location.hash==='#primer-rerun'){try{history.replaceState(null,'','#'+t.dataset.target);}catch(_){}}});
+ new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['data-view']});
+ if(location.hash==='#primer-rerun')tab.click();else sync();
  const style=document.createElement('style');style.id='srStyle';style.textContent='#shinRerunAI .sr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}#shinRerunAI .sr-grid label{display:flex;flex-direction:column;gap:4px}#shinRerunAI input[type=text],#shinRerunAI textarea,#shinRerunAI select{width:100%;max-width:100%}#shinRerunAI .sr-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}#shinRerunAI .sr-muted{font-size:12px;opacity:.82}#shinRerunAI .sr-table{overflow-x:auto;max-height:330px;overflow-y:auto}#shinRerunAI .sr-table table{min-width:560px}#shinRerunAI hr{margin:20px 0;border:0;border-top:1px solid #c5d5d5}';
  document.head.append(style);
  const card=document.createElement('section');card.id='shinRerunAI';card.className='sl-card';
- card.innerHTML='<h2>Rerun AI · Chọn mồi chạy lại</h2>'+
+ card.innerHTML='<h2>Primer Rerun · Chọn mồi chạy lại</h2>'+
  '<p>Tra cứu từ các quyết định trong sheet <b>RERUN_LIMS2</b>, danh mục mồi và quyết định reviewer đã xác nhận. Đây là hỗ trợ lựa chọn, không tự thay thế review chromatogram.</p>'+
  '<div class="sr-grid"><label>Lịch sử rerun đã review (.xlsx)<input id="srHistory" type="file" accept=".xlsx,.xlsm"></label><label>Danh sách mồi LIMS2 (.xlsx)<input id="srPrimers" type="file" accept=".xlsx,.xlsm"></label></div>'+
  '<div class="sr-actions"><button id="srImport" type="button">Cập nhật dữ liệu học</button><button id="srBackup" type="button">Sao lưu JSON</button><label>Khôi phục JSON <input id="srRestore" type="file" accept=".json"></label></div>'+
@@ -170,7 +179,18 @@ function mount(){
  '<div class="sr-actions"><button id="srSave" type="button">Lưu kết luận</button><button id="srExport" type="button">Xuất phản hồi CSV</button></div>'+
  '<p id="srFeedbackStatus" role="status"></p><div id="srFeedback" class="sr-table"></div>';
  host.prepend(card);
- function status(message=''){
+ const navSections=document.createElement('div');navSections.className='sr-actions';navSections.setAttribute('aria-label','Các phần Primer Rerun');
+ const sections=[['Chọn mồi','srQuery'],['Lịch sử rerun','srCases'],['Danh mục mồi','srCatalog'],['Dữ liệu học','srHistory'],['Reviewer','srLid']];
+ for(const [label,id] of sections){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>$(id)?.scrollIntoView({behavior:'smooth',block:'center'});navSections.append(b);}
+ card.querySelector('h2').after(navSections);
+ const catalog=document.createElement('details');catalog.id='srCatalog';catalog.innerHTML='<summary>Danh mục mồi LIMS2 (tất cả trạng thái)</summary><div id="srCatalogTable" class="sr-table"></div>';card.append(catalog);
+ navSections.querySelectorAll('button')[2].addEventListener('click',()=>{catalog.open=true;});
+ const historyAll=document.createElement('details');historyAll.innerHTML='<summary>Tra cứu toàn bộ lịch sử RERUN_LIMS2</summary><input id="srAllSearch" type="search" placeholder="LID, Issues, Requirement, Batch"><p id="srAllCount"></p><div id="srAllTable" class="sr-table"></div>';card.append(historyAll);
+ navSections.querySelectorAll('button')[1].onclick=()=>{historyAll.open=true;historyAll.scrollIntoView({behavior:'smooth',block:'start'});};
+ function refreshCatalog(){renderTable($('srCatalogTable'),['Mồi','Tọa độ','Vùng','Chiều','Trạng thái'],db.primers.map(x=>[x.name,x.position,x.region,x.direction,x.status||'Chưa xác định']));}
+ function refreshAll(){const q=norm($('srAllSearch').value);const a=db.history.filter(x=>!q||norm([x.lid,x.batch,x.issue,x.requirement].join(' ')).includes(q));$('srAllCount').textContent=a.length+' ca phù hợp · hiển thị tối đa 200';renderTable($('srAllTable'),['LID','Batch','Issues','Requirement'],a.slice(0,200).map(x=>[x.lid,x.batch,x.issue,x.requirement]));}
+ $('srAllSearch').addEventListener('input',refreshAll);
+ function status(message=''){refreshCatalog();refreshAll();
   const approved=(db.feedback||[]).filter(x=>x.status==='confirmed').length;
   const pending=(db.feedback||[]).length-approved;
   $('srStatus').textContent=message+' · '+db.history.length+' ca lịch sử · '+db.primers.length+' mồi · '+approved+' reviewer xác nhận · '+pending+' chờ review · Cập nhật: '+(db.updated||'chưa có')+' · '+[db.historyName,db.primerName].filter(Boolean).join(' / ');
