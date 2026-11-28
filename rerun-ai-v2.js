@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const KEY='shin_rerun_reviewed_v1', VERSION='2026.11.28-r3';
+const KEY='shin_rerun_reviewed_v1', VERSION='2026.11.28-r4';
 const $=id=>document.getElementById(id);
 const clean=v=>String(v??'').trim();
 const norm=v=>clean(v).normalize('NFC').toLowerCase().replace(/\s+/g,' ');
@@ -100,6 +100,14 @@ function records(data){
  const approved=(data.feedback||[]).filter(x=>x.status==='confirmed').map(x=>({...x,run:'Reviewer',row:'Đã lưu',source:'Reviewer xác nhận'}));
  return history.concat(approved);
 }
+function requirementKey(value){
+ const raw=norm(value);
+ // Only normalize simple PCR requirements; preserve order for multi-step workflows.
+ const m=raw.match(/^(pcr-bd|pcr1|pcr2)\s+([\w,-]+(?:\s*,\s*[\w-]+)*)$/i);
+ if(!m)return raw.replace(/\s*,\s*/g,', ');
+ const aliases={'hv2-109f':'f109','hv1-16190f':'f16190'};
+ return m[1]+' '+[...new Set(m[2].split(',').map(x=>{const a=x.trim();return aliases[a]||a;}))].sort().join(', ');
+}
 function recommend(q,data){
  const query=clean(q),sites=siteList(query),matches=[];
  if(!query||(!sites.length&&!wordSet(query).size))return {mode:'Nhập Issues hoặc PHP cần xác minh.',matches:[],ranked:[],candidates:[],sites};
@@ -111,7 +119,7 @@ function recommend(q,data){
  matches.sort((a,b)=>b.score-a.score||norm(a.lid).localeCompare(norm(b.lid)));
  const top=matches[0]?.score||0,selected=matches.filter(x=>x.score>=Math.max(22,top-14)).slice(0,2000);
  const groups=new Map();
- for(const r of selected){const key=norm(r.requirement).replace(/\s*,\s*/g,', ');
+ for(const r of selected){const key=requirementKey(r.requirement);
   if(!groups.has(key))groups.set(key,{requirement:r.requirement,score:r.score,source:new Set(),lids:new Set(),cases:0});
   const a=groups.get(key);a.score=Math.max(a.score,r.score);a.source.add(r.source);a.lids.add(norm(r.lid));a.cases++;
  }
@@ -121,7 +129,10 @@ function recommend(q,data){
  for(const t of sites)for(const p of data.primers){
   if(norm(p.status)!=='on')continue;
   if(/(?:^|[-_])16258R\b|^R16258$/i.test(p.name)){blocked.push(p.name);continue;}
+  // Skip conflicting coordinates rather than silently choosing one.
   const mm=p.position.match(/^(\d{1,5})\s*([FR])?$/i),direction=norm(p.direction);
+  const named=p.name.match(/(?:^|[-_])(\d{1,5})([FR])$/i);
+  if(mm&&named&&Number(named[1])!==Number(mm[1]))continue;
   if(!mm)continue;const anchor=Number(mm[1]);let dir='';
   if(['forward','f','xuôi','xuoi'].includes(direction))dir='F';
   if(['reverse','r','ngược','nguoc'].includes(direction))dir='R';
@@ -171,7 +182,7 @@ function mount(){
  '<label>Issues / PHP cần xác minh<textarea id="srQuery" rows="2" placeholder="Ví dụ: 152Y?; 309C; 573.1C; HV2 polyC; hoặc mô tả Issues"></textarea></label>'+
  '<div class="sr-actions"><button id="srPredict" type="button">Tra cứu, đề xuất</button><button id="srCopy" type="button">Sao chép phương án đầu</button></div>'+
  '<p id="srResult" role="status"></p><h3>Phương án trong dữ liệu đã review</h3><div id="srRank" class="sr-table"></div>'+
- '<h3>Mồi ON có hướng đọc về PHP</h3><p class="sr-muted">Chỉ sàng lọc theo tọa độ và chiều mồi (tối đa 700 nt), KHÔNG chứng minh mồi khuếch đại phù hợp, độ phủ thực tế hoặc khả năng xác minh PHP. Mồi HV1-16258R không được tự đề xuất.</p><div id="srCandidates" class="sr-table"></div>'+
+ '<h3>Mồi ON có hướng đọc về PHP</h3><p class="sr-muted">Chỉ sàng lọc theo tọa độ và chiều mồi (tối đa 700 nt); bỏ qua mồi có tọa độ mâu thuẫn hoặc không xác định, KHÔNG chứng minh mồi khuếch đại phù hợp, độ phủ thực tế hoặc khả năng xác minh PHP. Mồi HV1-16258R không được tự đề xuất.</p><div id="srCandidates" class="sr-table"></div>'+
  '<h3>Ca tương tự (tối đa 100)</h3><div id="srCases" class="sr-table"></div><hr>'+
  '<h3>Kết luận reviewer và học lại</h3><p class="sr-muted">Chỉ bản ghi đánh dấu “Đã xác nhận” mới được dùng cho lần gợi ý tiếp theo. Bản ghi chờ review không tác động gợi ý.</p>'+
  '<div class="sr-grid"><label>LID<input id="srLid" type="text" placeholder="LN_26_XXXX"></label><label>Batch (không bắt buộc)<input id="srBatch" type="text" placeholder="MS_..."></label><label>Phương án / mồi được chọn<input id="srChosen" type="text" placeholder="Tên mồi hoặc Requirement reviewer chọn"></label><label>Trạng thái<select id="srDecision"><option value="pending">Chờ review</option><option value="confirmed">Đã xác nhận bởi reviewer</option></select></label></div>'+
@@ -187,7 +198,11 @@ function mount(){
  navSections.querySelectorAll('button')[2].addEventListener('click',()=>{catalog.open=true;});
  const historyAll=document.createElement('details');historyAll.innerHTML='<summary>Tra cứu toàn bộ lịch sử RERUN_LIMS2</summary><input id="srAllSearch" type="search" placeholder="LID, Issues, Requirement, Batch"><p id="srAllCount"></p><div id="srAllTable" class="sr-table"></div>';card.append(historyAll);
  navSections.querySelectorAll('button')[1].onclick=()=>{historyAll.open=true;historyAll.scrollIntoView({behavior:'smooth',block:'start'});};
- function refreshCatalog(){renderTable($('srCatalogTable'),['Mồi','Tọa độ','Vùng','Chiều','Trạng thái'],db.primers.map(x=>[x.name,x.position,x.region,x.direction,x.status||'Chưa xác định']));}
+ function catalogWarning(x){
+ const a=clean(x.position).match(/^(\d{1,5})\s*[FR]?$/i),b=clean(x.name).match(/(?:^|[-_])(\d{1,5})[FR]$/i);
+ return a&&b&&Number(a[1])!==Number(b[1])?' · Kiểm tra tọa độ':!a?' · Tọa độ cần xác minh':!clean(x.direction)?' · Thiếu chiều':'';
+ }
+ function refreshCatalog(){renderTable($('srCatalogTable'),['Mồi','Tọa độ','Vùng','Chiều','Trạng thái'],db.primers.map(x=>[x.name,x.position,x.region,x.direction,(x.status||'Chưa xác định')+catalogWarning(x)]));}
  function refreshAll(){const q=norm($('srAllSearch').value);const a=db.history.filter(x=>!q||norm([x.lid,x.batch,x.issue,x.requirement].join(' ')).includes(q));$('srAllCount').textContent=a.length+' ca phù hợp · hiển thị tối đa 200';renderTable($('srAllTable'),['LID','Batch','Issues','Requirement'],a.slice(0,200).map(x=>[x.lid,x.batch,x.issue,x.requirement]));}
  $('srAllSearch').addEventListener('input',refreshAll);
  function status(message=''){refreshCatalog();refreshAll();
